@@ -1,0 +1,14 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+decision_stump	decision_stump.py	/^def decision_stump(m_data):$/;"	f
+generate_data	decision_stump.py	/^def generate_data(seed):$/;"	f
+main	decision_stump.py	/^def main( ):$/;"	f
+noise	decision_stump.py	/^def noise(f_x):$/;"	f
+random	decision_stump.py	/^import random$/;"	i
+sign	decision_stump.py	/^def sign(x):$/;"	f
+sys	decision_stump.py	/^import sys$/;"	i
+test	decision_stump.py	/^def test(m_data,f):$/;"	f
