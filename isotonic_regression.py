@@ -9,6 +9,8 @@ class Node:
 		self.next = next
 
 def main(train_file):
+'''输入文件格式uid，待校验的概率值（比如正样本概率），真实结果（0或者1）
+！！！ATTENTION！！！ 需要输入文件已经按照待校验的概率值排序'''
 	head = None
 	for line in open(train_file,'r'):
 		vec = line.split('\t')
