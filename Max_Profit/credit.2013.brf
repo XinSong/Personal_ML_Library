@@ -1,0 +1,108 @@
+overdue.2013<-read.table('sample',header=TRUE)
+overdue.2013[,'is_overdue']<-ifelse(overdue.2013[,'overdue_dur']>3,1,ifelse(overdue.2013[,'overdue_dur']>0 & overdue.2013[,'overdue_dur']<=3,-1,0))
+overdue.2013<-overdue.2013[overdue.2013$is_overdue!=-1,]
+overdue.2013$is_overdue<-as.factor(overdue.2013$is_overdue)
+train.2013<-overdue.2013[overdue.2013$rid<=30000,]
+test.2013<-overdue.2013[overdue.2013$rid>30000,]
+train.2013.normal<-train.2013[train.2013$is_overdue==0,]
+train.2013.overdue<-train.2013[train.2013$is_overdue==1,]
+
+#BRF
+start_index<-1
+end_index<-1
+multiple<-4
+sequence<-rep(seq(1,nrow(train.2013.normal),by=1),2)
+random_sequence<-sample(sequence)
+while(end_index!=length(random_sequence))
+{
+  print(start_index)
+  end_index <- start_index+nrow(train.2013.overdue)*multiple-1
+  if(end_index > length(random_sequence)) 
+  {
+    end_index<- length(random_sequence)
+    start_index<-end_index-nrow(train.2013.overdue)*multiple+1
+  }
+  train.2013.brf<-rbind(train.2013.normal[random_sequence[start_index:end_index],],train.2013.overdue)
+  if(start_index==1) credit.2013.brf <- randomForest(x=train.2013.brf[,3:42],y=train.2013.brf[,"is_overdue"],ntree=100)
+  else
+    credit.2013.brf <- combine(credit.2013.brf,randomForest(x=train.2013.brf[,3:42],y=train.2013.brf[,"is_overdue"],ntree=100))
+  start_index <- end_index+1  
+}
+pred.2013.brf<-predict(credit.2013.brf,test.2013,type='prob')
+prediction.2013.brf<-prediction(pred.2013.brf[,2],test.2013[,'is_overdue'])
+auc.2013.brf<-performance(prediction.2013.brf,'auc')
+auc.2013.brf
+roc.2013.brf<-performance(prediction.2013.brf,'tpr','fpr')
+plot(roc.2013.brf,col='red')
+abline(0,1)
+
+#RF_基准
+credit.2013.rf<-randomForest(x=train.2013[,3:42],y=train.2013[,"is_overdue"],ntree=500,mtry=12)
+pred.2013.rf<-predict(credit.2013.rf,test.2013,type='prob')
+prediction.2013.rf<-prediction(pred.2013.rf[,2],test.2013[,'is_overdue'])
+auc.2013.rf<-performance(prediction.2013.rf,'auc')
+auc.2013.rf
+
+
+#mtry.test 选出mtry的最优取值
+mtry.test<-function(train.normal,train.overdue,test)
+{
+  auc.total<-data.frame()
+  for(i in seq(ceiling(sqrt(40)*0.2),ceiling(sqrt(40)*3)))
+  {
+  print(i)
+  start_index<-1
+  end_index<-1
+  random_sequence<-sample(nrow(train.normal))
+  while(end_index!=nrow(train.normal))
+  {
+    end_index <- start_index+nrow(train.overdue)-1
+    if(end_index > nrow(train.normal)) 
+    {
+      end_index<-nrow(train.normal)
+      start_index<-end_index-nrow(train.overdue)+1
+    }
+    train.brf<-rbind(train.normal[random_sequence[start_index:end_index],],train.overdue)
+    if(start_index==1) credit.brf <- randomForest(x=train.brf[,3:42],y=train.brf[,"is_overdue"],ntree=100,mtry=i)
+    else
+    {credit.brf <- combine(credit.brf,randomForest(x=train.brf[,3:42],y=train.brf[,"is_overdue"],ntree=100,mtry=i))}
+    start_index <- end_index+1  
+  }
+  pred.brf<-predict(credit.brf,newdata=test,type='prob')
+  prediction.brf<-prediction(pred.brf[,2],test[,'is_overdue'])
+  auc<-performance(prediction.brf,'auc')
+  print(auc@y.values)
+  auc.total<-rbind(auc.total,c(i,auc@y.values))
+  }
+  auc.total
+}
+
+
+#绘制横坐标为Top N%,纵坐标为逾期人数的曲线
+pred.2013.brf<-pred.2013.brf[order(-pred.2013.brf[,1]),]
+order.sequence<-as.numeric(rownames(pred.2013.brf))
+
+err=0
+x<-vector()
+y<-vector()
+for(i in seq(1,length(order.sequence))){
+  if(test.2013[as.character(order.sequence[i]),'is_overdue']==1){
+      err<-err+1
+  }
+  x<-c(x,i/length(order.sequence))
+  y<-c(y,err)
+}
+
+
+err.crf=0
+x.crf<-vector()
+y.crf<-vector()
+order.crf<-order(pred.crf.matrix)
+for(i in seq(1,length(order.crf))){
+  if(test.2013[order.crf[i],'isoverdue']==1){
+    err.crf<-err.crf+1
+  }
+  x.crf<-c(x.crf,i/length(order.crf))
+  y.crf<-c(y.crf,err.crf)
+}
+
